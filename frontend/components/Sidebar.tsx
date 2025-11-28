@@ -32,15 +32,6 @@ const navItems: NavItem[] = [
     href: '/dashboard/lifeguards',
   },
   {
-    label: 'Incidents',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor">
-        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
-      </svg>
-    ),
-    href: '/dashboard/incidents',
-  },
-  {
     label: 'Certifications',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor">
@@ -48,6 +39,15 @@ const navItems: NavItem[] = [
       </svg>
     ),
     href: '/dashboard/certifications',
+  },
+  {
+    label: 'Incidents',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+      </svg>
+    ),
+    href: '/dashboard/incidents',
   },
   {
     label: 'Rosters',

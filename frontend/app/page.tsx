@@ -25,7 +25,7 @@ export default function Home() {
 			<section className={styles.glassCard + ' container'}>
 				<div className={styles.heroLeft}>
 					<span className={styles.badge}>Supervisor Portal</span>
-					<h2 className={styles.title}>AquaMate — Command your aquatic teams with clarity.</h2>
+					<h2 className={styles.title}>AquaMate - Command your aquatic teams with clarity.</h2>
 					<p className={styles.subtitle}>
 						Manage lifeguard rosters, track incidents, coordinate certifications, and handle administrative tasks
 						from a single, secure dashboard. Built for aquatic supervisors overseeing multiple sites and teams.

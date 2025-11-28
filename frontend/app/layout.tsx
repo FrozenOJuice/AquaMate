@@ -2,6 +2,7 @@ import React from 'react'
 import './globals.css'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
+import ThemeProvider from '@/components/ThemeProvider'
 
 export const metadata = {
 	title: 'AquaMate',
@@ -13,15 +14,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 		<html lang="en">
 			<head />
 				<body>
-					<div className="app-root">
-						<Header />
+					<ThemeProvider>
+						<div className="app-root">
+							<Header />
 
-						<main className="site-main">{children}</main>
+							<main className="site-main">{children}</main>
 
-						<Footer />
-					</div>
+							<Footer />
+						</div>
+					</ThemeProvider>
 				</body>
 		</html>
 	)
 }
-
