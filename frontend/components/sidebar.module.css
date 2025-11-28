@@ -1,0 +1,180 @@
+/* Sidebar styles */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 72px;
+  height: calc(100vh - 72px);
+  background: linear-gradient(180deg, rgba(43, 16, 72, 0.5), rgba(11, 7, 23, 0.8));
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  --expanded-width: 240px;
+  --collapsed-width: 80px;
+  --icon-size: 24px;
+  --nav-item-padding: 12px;
+  --sidebar-padding-x-expanded: 12px;
+  --sidebar-padding-x-collapsed: 8px;
+  --icon-offset-left: calc(
+    (var(--collapsed-width) - (var(--sidebar-padding-x-collapsed) * 2) - var(--icon-size)) / 2
+  );
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 30;
+  overflow-y: auto;
+  overflow-x: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.expanded {
+  width: var(--expanded-width);
+  padding: 8px var(--sidebar-padding-x-expanded);
+}
+
+.collapsed {
+  width: var(--collapsed-width);
+  padding: 8px var(--sidebar-padding-x-collapsed);
+}
+
+.toggleBtn {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(124, 58, 237, 0.02));
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  color: var(--accent);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100%;
+  height: 40px;
+}
+
+.toggleBtn:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1));
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  transform: scale(1.02);
+}
+
+.toggleBtn:active {
+  transform: scale(0.98);
+}
+
+.toggleIcon {
+  width: 18px;
+  height: 18px;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px var(--nav-item-padding);
+  padding-left: calc(var(--icon-offset-left) + var(--sidebar-padding-x-collapsed) - var(--sidebar-padding-x-expanded));
+  padding-right: var(--nav-item-padding);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.25s cubic-bezier(0.4, 0, 0.2, 1), gap 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  position: relative;
+  overflow: visible;
+}
+
+.collapsed .navItem {
+  padding-left: var(--icon-offset-left);
+  padding-right: var(--nav-item-padding);
+}
+
+.navItem::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.navItem:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+.sidebar.collapsed .navItem:hover {
+  transform: none;
+}
+
+.navItem:hover::before {
+  opacity: 1;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  color: inherit;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: none;
+}
+
+.navItem:hover .icon {
+  transform: scale(1.1);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  max-width: 180px;
+  display: inline-block;
+}
+
+.sidebar.collapsed .label {
+  opacity: 0;
+  max-width: 0;
+  transform: translateX(-6px);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    --expanded-width: 200px;
+    --collapsed-width: 70px;
+    --sidebar-padding-x-expanded: 10px;
+    --sidebar-padding-x-collapsed: 8px;
+    --icon-offset-left: calc(
+      (var(--collapsed-width) - (var(--sidebar-padding-x-collapsed) * 2) - var(--icon-size)) / 2
+    );
+  }
+
+  .expanded {
+    width: var(--expanded-width);
+  }
+
+  .collapsed {
+    width: var(--collapsed-width);
+  }
+}
