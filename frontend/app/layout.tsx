@@ -13,12 +13,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 	return (
 		<html lang="en">
 			<head />
-				<body>
+				<body className="min-h-screen">
 					<ThemeProvider>
-						<div className="app-root">
+						<div className="flex min-h-screen flex-col">
 							<Header />
 
-							<main className="site-main">{children}</main>
+							<main className="flex-1 pt-[72px]">{children}</main>
 
 							<Footer />
 						</div>

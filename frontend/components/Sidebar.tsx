@@ -2,7 +2,6 @@
 
 import React, { useState, createContext } from 'react'
 import Link from 'next/link'
-import styles from './sidebar.module.css'
 
 export const SidebarContext = createContext<{ isExpanded: boolean }>({ isExpanded: true })
 
@@ -84,14 +83,18 @@ export default function Sidebar() {
 
   return (
     <SidebarContext.Provider value={{ isExpanded }}>
-      <aside className={`${styles.sidebar} ${isExpanded ? styles.expanded : styles.collapsed}`}>
+      <aside
+        className={`fixed left-0 top-[72px] z-30 flex h-[calc(100vh-72px)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] backdrop-blur-lg transition-all duration-300 ${
+          isExpanded ? 'w-[240px] px-3' : 'w-20 px-2'
+        }`}
+      >
         <button
-          className={styles.toggleBtn}
+          className="mb-2 flex h-10 w-full items-center justify-center rounded-lg border border-accent/20 bg-[linear-gradient(135deg,rgba(139,92,246,0.05),rgba(124,58,237,0.02))] text-xs font-bold text-accent transition hover:border-accent/50 hover:bg-[linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.1))] hover:shadow-[0_4px_12px_rgba(139,92,246,0.15)] active:scale-[0.98]"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
           <svg
-            className={styles.toggleIcon}
+            className="h-[18px] w-[18px] transition"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -101,16 +104,25 @@ export default function Sidebar() {
           </svg>
         </button>
 
-        <nav className={styles.nav}>
+        <nav className="flex flex-col gap-2">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={styles.navItem}
+              className={`group relative flex items-center rounded-lg px-3 py-2 text-sm font-medium text-muted transition hover:bg-white/10 hover:text-accent ${
+                isExpanded ? 'justify-start gap-3' : 'justify-center'
+              }`}
               title={!isExpanded ? item.label : undefined}
             >
-              <span className={styles.icon}>{item.icon}</span>
-              <span className={styles.label} aria-hidden={!isExpanded}>
+              <span className="flex h-6 w-6 items-center justify-center text-lg text-inherit transition group-hover:scale-110">
+                {item.icon}
+              </span>
+              <span
+                className={`overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 ${
+                  isExpanded ? 'max-w-[180px] opacity-100' : 'max-w-0 opacity-0 -translate-x-1 pointer-events-none'
+                }`}
+                aria-hidden={!isExpanded}
+              >
                 {item.label}
               </span>
             </Link>
