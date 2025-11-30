@@ -9,11 +9,13 @@ from ..core.database import Base
 
 
 class UserRole(str, Enum):
+    APPLICANT = "Applicant"
     VOLUNTEER = "Volunteer"
     ATTENDANT = "Attendant"
     LIFEGUARD = "Lifeguard"
     HEAD_LIFEGUARD = "Head Lifeguard"
     AQUATIC_SUPERVISOR = "Aquatic Supervisor"
+    ADMIN = "Admin"
 
 
 class UserStatus(str, Enum):
@@ -28,6 +30,6 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(SAEnum(UserRole, name="user_role"), nullable=False, default=UserRole.LIFEGUARD)
+    role = Column(SAEnum(UserRole, name="user_role"), nullable=False, default=UserRole.APPLICANT)
     status = Column(SAEnum(UserStatus, name="user_status"), nullable=False, default=UserStatus.ACTIVE)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

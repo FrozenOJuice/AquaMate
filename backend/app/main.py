@@ -3,19 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes.auth import router as auth_router
 from .api.routes.health import router as health_router
+
 from .core.config import get_settings
-from .core.database import Base, engine
 from .core.errors import register_exception_handlers
 
 settings = get_settings()
 
 app = FastAPI(title=settings.project_name, debug=settings.debug)
 register_exception_handlers(app)
-
-# Create tables at startup if they do not exist yet.
-@app.on_event("startup")
-def on_startup() -> None:
-    Base.metadata.create_all(bind=engine)
 
 app.add_middleware(
     CORSMiddleware,

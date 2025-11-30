@@ -46,7 +46,7 @@ def test_register_user_success():
     assert "id" in data and data["id"]
     assert data["username"] == payload["username"]
     assert data["email"] == payload["email"]
-    assert data["role"] == "Volunteer"
+    assert data["role"] == "Applicant"
     assert data["status"] == "active"
     assert "created_at" in data
 
@@ -73,9 +73,8 @@ def test_register_rejects_invalid_username():
         "/auth/register",
         json={"username": "no spaces allowed", "email": "good@example.com", "password": "ValidPass123!"},
     )
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert any("Username must be 3-30 chars" in err["msg"] for err in detail)
+    assert response.status_code == 400
+    assert "Username must be 3-30 chars" in response.json()["detail"]
 
 
 def test_register_rejects_weak_password():
@@ -83,9 +82,8 @@ def test_register_rejects_weak_password():
         "/auth/register",
         json={"username": "valid_user", "email": "good@example.com", "password": "alllowercase"},
     )
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert any("Password must include upper, lower, and a digit" in err["msg"] for err in detail)
+    assert response.status_code == 400
+    assert "Password must include upper, lower, a digit, and a special character" in response.json()["detail"]
 
 
 def test_register_rejects_bad_email():
@@ -93,9 +91,8 @@ def test_register_rejects_bad_email():
         "/auth/register",
         json={"username": "valid_user", "email": "not-an-email", "password": "ValidPass123!"},
     )
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert any("valid email" in err["msg"] for err in detail)
+    assert response.status_code == 400
+    assert "valid" in response.json()["detail"].lower()
 
 
 def test_login_returns_token():
@@ -107,6 +104,6 @@ def test_login_returns_token():
     data = response.json()
     assert data["username"] == payload["username"]
     assert "id" in data and data["id"]
-    assert data["role"] == "Volunteer"
+    assert data["role"] == "Applicant"
     assert data["status"] == "active"
     assert "token" in data and data["token"]

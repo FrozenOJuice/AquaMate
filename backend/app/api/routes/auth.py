@@ -33,7 +33,7 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPub
         username=username,
         email=email,
         hashed_password=hash_password(password),
-        role=UserRole.VOLUNTEER,
+        role=UserRole.APPLICANT,
         status=UserStatus.ACTIVE,
     )
 
