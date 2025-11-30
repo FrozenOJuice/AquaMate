@@ -1,3 +1,5 @@
+// Style presets and types for surface treatments (solid vs glass).
+
 export type StyleKey = 'solid' | 'glass'
 
 export type StyleOption = {

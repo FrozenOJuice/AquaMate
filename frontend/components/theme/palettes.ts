@@ -1,3 +1,5 @@
+// Palette presets and types for accent/background options the app can pick from.
+
 export type PaletteKey = 'aurora' | 'lagoon' | 'coral' | 'citrus' | 'midnight' | 'custom'
 
 export type PaletteOption = {

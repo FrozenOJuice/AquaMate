@@ -1,4 +1,4 @@
-// Reusable color utilities used by the theme layer
+// Utility helpers for mixing colors and building derived theme palettes.
 
 export const withAlpha = (hex: string, alpha: string) => {
   if (!hex.startsWith('#')) return hex
