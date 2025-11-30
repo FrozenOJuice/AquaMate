@@ -9,7 +9,7 @@ import { buildPaletteFromCustom, CustomColors } from './usePaletteUtils'
 import { buildCssVariables, applyCssVariables } from './cssVars'
 import { type FavoritePalette, type ThemeContextValue } from './themeTypes'
 
-const defaultCustom: CustomColors = { accent: '#2563eb', accent2: '#1e3a8a', accent3: '#3b82f6' }
+const defaultCustom: CustomColors = { accent: '#f5f5f5', accent2: '#d4d4d4', accent3: '#a3a3a3' }
 
 export function useThemeState(): ThemeContextValue {
   const [paletteKey, setPaletteKey] = useState<PaletteKey>('custom')
