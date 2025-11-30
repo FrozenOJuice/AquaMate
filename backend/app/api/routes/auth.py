@@ -1,13 +1,16 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ...core.database import get_db
-from ...core.security import generate_token, hash_password, verify_password
+from ...core.security import hash_password, verify_password
+from ...core.session import get_session_manager
 from ...models import User, UserRole, UserStatus
 from ...schemas import AuthResponse, UserCreate, UserLogin, UserPublic
 from ...schemas.validators import trim, validate_email, validate_password, validate_username
+from ..dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -48,14 +51,26 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPub
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: UserLogin, db: Session = Depends(get_db)) -> AuthResponse:
-    username = trim(payload.username)
-    user = db.query(User).filter(User.username == username).first()
+def login(payload: UserLogin, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+    identifier = trim(payload.username)
+    user = db.query(User).filter(or_(User.username == identifier, User.email == identifier)).first()
 
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
-    token = generate_token()
+    session_manager = get_session_manager()
+    session_token = session_manager.create_session(user.id)
+
+    response.set_cookie(
+        key="session",
+        value=session_token,
+        max_age=session_manager.max_age,
+        httponly=True,
+        samesite="lax",
+        secure=False,  # flip to True when serving over HTTPS
+    )
+
+    token = session_token  # returned for compatibility; cookie is the primary session
     return AuthResponse(
         id=user.id,
         username=user.username,
@@ -64,4 +79,23 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> AuthResponse:
         status=user.status,
         created_at=user.created_at,
         token=token,
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response) -> None:
+    # Clear the session cookie
+    response.delete_cookie(key="session", httponly=True, samesite="lax", secure=False)
+    return None
+
+
+@router.get("/me", response_model=UserPublic)
+def read_me(current_user: User = Depends(get_current_user)) -> UserPublic:
+    return UserPublic(
+        id=current_user.id,
+        username=current_user.username,
+        email=current_user.email,
+        role=current_user.role,
+        status=current_user.status,
+        created_at=current_user.created_at,
     )

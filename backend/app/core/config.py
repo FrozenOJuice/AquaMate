@@ -1,4 +1,3 @@
-
 from functools import lru_cache
 from typing import List
 
@@ -13,6 +12,8 @@ class Settings(BaseSettings):
     api_prefix: str = ""
     debug: bool = True
     database_url: str = "postgresql+psycopg2://aquamate:aquamate@localhost:5432/aquamate"
+    session_secret: str = "change-me"
+    session_max_age: int = 60 * 60 * 24 * 7  # 7 days
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
