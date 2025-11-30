@@ -1,11 +1,11 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from ...core.config import get_settings
 from ...core.database import get_db
-from ...core.security import hash_password, verify_password
+from ...core.rate_limit import InMemoryRateLimiter, make_rate_limit_dependency
+from ...core.security import ensure_not_breached_password, hash_password, verify_password
 from ...core.session import get_session_manager
 from ...models import User, UserRole, UserStatus
 from ...schemas import AuthResponse, UserCreate, UserLogin, UserPublic
@@ -14,20 +14,32 @@ from ..dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+settings = get_settings()
+register_rate_limit = make_rate_limit_dependency(
+    InMemoryRateLimiter(settings.rate_limit_register_max_requests, settings.rate_limit_register_window_seconds),
+    "register",
+)
+login_rate_limit = make_rate_limit_dependency(
+    InMemoryRateLimiter(settings.rate_limit_login_max_requests, settings.rate_limit_login_window_seconds),
+    "login",
+)
 
-@router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(register_rate_limit)],
+)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPublic:
     username = validate_username(payload.username)
     email = validate_email(payload.email)
     password = validate_password(payload.password)
+    ensure_not_breached_password(password)
 
-    existing_username = db.query(User).filter(User.username == username).first()
-    if existing_username:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
-
-    existing_email = db.query(User).filter(User.email == email).first()
-    if existing_email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+    existing_account = db.query(User).filter(or_(User.username == username, User.email == email)).first()
+    if existing_account:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Account already exists")
 
     user = User(
         username=username,
@@ -50,7 +62,11 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPub
     )
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    dependencies=[Depends(login_rate_limit)],
+)
 def login(payload: UserLogin, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
     identifier = trim(payload.username)
     user = db.query(User).filter(or_(User.username == identifier, User.email == identifier)).first()

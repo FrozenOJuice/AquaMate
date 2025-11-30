@@ -57,7 +57,7 @@ def test_register_rejects_duplicate_username():
 
     response = client.post("/auth/register", json={**payload, "email": "bob2@example.com"})
     assert response.status_code == 400
-    assert response.json()["detail"] == "Username already registered"
+    assert response.json()["detail"] == "Account already exists"
 
 
 def test_register_validation_error_shape():

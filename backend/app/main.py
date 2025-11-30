@@ -6,11 +6,14 @@ from .api.routes.health import router as health_router
 
 from .core.config import get_settings
 from .core.errors import register_exception_handlers
+from .core.logging import configure_logging, log_requests_middleware
 
 settings = get_settings()
 
+configure_logging()
 app = FastAPI(title=settings.project_name, debug=settings.debug)
 register_exception_handlers(app)
+app.middleware("http")(log_requests_middleware)
 
 app.add_middleware(
     CORSMiddleware,
