@@ -7,7 +7,7 @@ from ...core.database import get_db
 from ...core.security import generate_token, hash_password, verify_password
 from ...models import User
 from ...schemas import AuthResponse, UserCreate, UserLogin, UserPublic
-from ...schemas.validators import trim, validate_password, validate_username
+from ...schemas.validators import trim, validate_email, validate_password, validate_username
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
 def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPublic:
     username = validate_username(payload.username)
-    email = trim(payload.email)
+    email = validate_email(payload.email)
     password = validate_password(payload.password)
 
     existing_username = db.query(User).filter(User.username == username).first()

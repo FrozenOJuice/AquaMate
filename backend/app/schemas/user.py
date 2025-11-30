@@ -1,23 +1,19 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserCreate(BaseModel):
-    username: str = Field(..., description="Unique username (letters/numbers/underscore)", example="demo_user")
-    email: EmailStr = Field(..., description="User email address", example="demo@example.com")
-    password: str = Field(
-        ...,
-        description="Password (12+ chars, upper/lower/digit/special)",
-        example="StrongPass123!",
-    )
+    username: str
+    email: EmailStr
+    password: str
 
     model_config = ConfigDict(json_schema_extra={"title": "Register"})
 
 
 class UserLogin(BaseModel):
-    username: str = Field(..., description="Username", example="demo_user")
-    password: str = Field(..., description="Password", example="StrongPass123!")
+    username: str
+    password: str
 
     model_config = ConfigDict(json_schema_extra={"title": "Login"})
 
@@ -31,6 +27,6 @@ class UserPublic(BaseModel):
 
 
 class AuthResponse(UserPublic):
-    token: str = Field(..., description="Bearer token placeholder", example="eyJhbGciOi...")
+    token: str
 
     model_config = ConfigDict(json_schema_extra={"title": "Auth Response"})
