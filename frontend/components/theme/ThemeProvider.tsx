@@ -1,7 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { paletteOptions, styleOptions, type PaletteKey, type PaletteOption, type StyleOption, type StyleKey } from './presets'
+import { paletteOptions, type PaletteKey, type PaletteOption } from './palettes'
+import { styleOptions, type StyleKey, type StyleOption } from './styles'
 import { buildPaletteFromCustom, CustomColors, withAlpha } from './usePaletteUtils'
 
 type FavoritePalette = {

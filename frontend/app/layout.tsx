@@ -1,7 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import ThemeProvider from '@/components/theme/ThemeProvider'
-import AppShell from '@/components/layout/AppShell'
+import AppShell from '@/components/layout/global/AppShell'
 
 export const metadata: Metadata = {
   title: 'AquaMate',

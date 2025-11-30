@@ -1,9 +1,9 @@
 'use client'
 
 import React from 'react'
-import DashboardHeader from '@/components/layout/DashboardHeader'
-import DashboardSidebar from '@/components/layout/DashboardSidebar/Sidebar'
-import { SidebarProvider, useSidebar } from '@/components/layout/DashboardSidebar/SidebarContext'
+import DashboardHeader from '@/components/layout/dashboard/DashboardHeader'
+import DashboardSidebar from '@/components/layout/dashboard/DashboardSidebar/Sidebar'
+import { SidebarProvider, useSidebar } from '@/components/layout/dashboard/DashboardSidebar/SidebarContext'
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { isExpanded } = useSidebar()
