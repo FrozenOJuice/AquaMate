@@ -1,22 +1,44 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from backend.app.core.database import get_db
+from backend.app.core.database import Base, get_db
 from backend.app.main import app
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base.metadata.create_all(bind=engine)
+
+
+def override_get_db():
+    db = TestingSessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def reset_db():
-    db = get_db()
-    db.reset()
+def clean_database():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     yield
-    db.reset()
+    Base.metadata.drop_all(bind=engine)
 
 
 def test_register_user_success():
-    payload = {"username": "alice", "email": "alice@example.com", "password": "secretpass"}
+    payload = {"username": "alice", "email": "alice@example.com", "password": "StrongPass123!"}
     response = client.post("/auth/register", json=payload)
 
     assert response.status_code == 201
@@ -27,7 +49,7 @@ def test_register_user_success():
 
 
 def test_register_rejects_duplicate_username():
-    payload = {"username": "bob", "email": "bob@example.com", "password": "anotherpass"}
+    payload = {"username": "bob", "email": "bob@example.com", "password": "AnotherPass123!"}
     client.post("/auth/register", json=payload)
 
     response = client.post("/auth/register", json={**payload, "email": "bob2@example.com"})
@@ -46,7 +68,7 @@ def test_register_validation_error_shape():
 def test_register_rejects_invalid_username():
     response = client.post(
         "/auth/register",
-        json={"username": "no spaces allowed", "email": "good@example.com", "password": "Validpass1"},
+        json={"username": "no spaces allowed", "email": "good@example.com", "password": "ValidPass123!"},
     )
     assert response.status_code == 422
     detail = response.json()["detail"]
@@ -66,7 +88,7 @@ def test_register_rejects_weak_password():
 def test_register_rejects_bad_email():
     response = client.post(
         "/auth/register",
-        json={"username": "valid_user", "email": "not-an-email", "password": "Validpass1"},
+        json={"username": "valid_user", "email": "not-an-email", "password": "ValidPass123!"},
     )
     assert response.status_code == 422
     detail = response.json()["detail"]
@@ -74,7 +96,7 @@ def test_register_rejects_bad_email():
 
 
 def test_login_returns_token():
-    payload = {"username": "carol", "email": "carol@example.com", "password": "pwdpassword"}
+    payload = {"username": "carol", "email": "carol@example.com", "password": "ValidPass123!"}
     client.post("/auth/register", json=payload)
 
     response = client.post("/auth/login", json={"username": "carol", "password": payload["password"]})

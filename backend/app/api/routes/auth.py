@@ -1,43 +1,51 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.security import generate_token, hash_password, verify_password
 from ...models import User
 from ...schemas import AuthResponse, UserCreate, UserLogin, UserPublic
+from ...schemas.validators import trim, validate_password, validate_username
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
-def register_user(payload: UserCreate) -> UserPublic:
-    db = get_db()
+def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPublic:
+    username = validate_username(payload.username)
+    email = trim(payload.email)
+    password = validate_password(payload.password)
 
-    if db.get_user_by_username(payload.username):
+    existing_username = db.query(User).filter(User.username == username).first()
+    if existing_username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered")
 
-    if db.get_user_by_email(payload.email):
+    existing_email = db.query(User).filter(User.email == email).first()
+    if existing_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
     user = User(
-        username=payload.username,
-        email=payload.email,
-        password_hash=hash_password(payload.password),
+        username=username,
+        email=email,
+        password_hash=hash_password(password),
         created_at=datetime.utcnow(),
     )
 
-    db.add_user(user)
-    return UserPublic(**user.__dict__)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return UserPublic(username=user.username, email=user.email, created_at=user.created_at)
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: UserLogin) -> AuthResponse:
-    db = get_db()
-    user = db.get_user_by_username(payload.username)
+def login(payload: UserLogin, db: Session = Depends(get_db)) -> AuthResponse:
+    username = trim(payload.username)
+    user = db.query(User).filter(User.username == username).first()
 
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     token = generate_token()
-    return AuthResponse(**user.__dict__, token=token)
+    return AuthResponse(username=user.username, email=user.email, created_at=user.created_at, token=token)

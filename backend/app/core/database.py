@@ -1,34 +1,24 @@
 
-from typing import Dict, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-from ..models.user import User
+from .config import get_settings
 
+settings = get_settings()
 
-class InMemoryDB:
-    """Very lightweight in-memory store for demo and tests."""
-
-    def __init__(self) -> None:
-        self.users_by_username: Dict[str, User] = {}
-        self.users_by_email: Dict[str, User] = {}
-
-    def add_user(self, user: User) -> User:
-        self.users_by_username[user.username] = user
-        self.users_by_email[user.email] = user
-        return user
-
-    def get_user_by_username(self, username: str) -> Optional[User]:
-        return self.users_by_username.get(username)
-
-    def get_user_by_email(self, email: str) -> Optional[User]:
-        return self.users_by_email.get(email)
-
-    def reset(self) -> None:
-        self.users_by_username.clear()
-        self.users_by_email.clear()
+# SQLAlchemy setup
+engine = create_engine(settings.database_url, future=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
+Base = declarative_base()
 
 
-db = InMemoryDB()
-
-
-def get_db() -> InMemoryDB:
-    return db
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

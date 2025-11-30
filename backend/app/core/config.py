@@ -2,17 +2,20 @@
 from functools import lru_cache
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseSettings
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     """Runtime configuration for the API."""
 
     project_name: str = "AquaMate API"
     allowed_origins: List[str] = ["*"]
     api_prefix: str = ""
     debug: bool = True
-    password_salt: str = "aquamate-demo-salt"
+    database_url: str = "postgresql+psycopg2://aquamate:aquamate@localhost:5432/aquamate"
+
+    class Config:
+        env_file = ".env"
 
 
 @lru_cache

@@ -15,5 +15,31 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
 
+  adminer:
+    image: adminer:4
+    container_name: aquamate-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aquamate-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://aquamate:aquamate@postgres:5432/aquamate}
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+
 volumes:
   db_data:
