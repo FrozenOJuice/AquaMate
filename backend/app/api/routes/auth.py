@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ...core.database import get_db
 from ...core.security import generate_token, hash_password, verify_password
-from ...models import User
+from ...models import User, UserRole, UserStatus
 from ...schemas import AuthResponse, UserCreate, UserLogin, UserPublic
 from ...schemas.validators import trim, validate_email, validate_password, validate_username
 
@@ -29,14 +29,22 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)) -> UserPub
     user = User(
         username=username,
         email=email,
-        password_hash=hash_password(password),
-        created_at=datetime.utcnow(),
+        hashed_password=hash_password(password),
+        role=UserRole.VOLUNTEER,
+        status=UserStatus.ACTIVE,
     )
 
     db.add(user)
     db.commit()
     db.refresh(user)
-    return UserPublic(username=user.username, email=user.email, created_at=user.created_at)
+    return UserPublic(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        status=user.status,
+        created_at=user.created_at,
+    )
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -44,8 +52,16 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> AuthResponse:
     username = trim(payload.username)
     user = db.query(User).filter(User.username == username).first()
 
-    if not user or not verify_password(payload.password, user.password_hash):
+    if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
     token = generate_token()
-    return AuthResponse(username=user.username, email=user.email, created_at=user.created_at, token=token)
+    return AuthResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        role=user.role,
+        status=user.status,
+        created_at=user.created_at,
+        token=token,
+    )

@@ -43,8 +43,11 @@ def test_register_user_success():
 
     assert response.status_code == 201
     data = response.json()
+    assert "id" in data and data["id"]
     assert data["username"] == payload["username"]
     assert data["email"] == payload["email"]
+    assert data["role"] == "Volunteer"
+    assert data["status"] == "active"
     assert "created_at" in data
 
 
@@ -103,4 +106,7 @@ def test_login_returns_token():
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == payload["username"]
+    assert "id" in data and data["id"]
+    assert data["role"] == "Volunteer"
+    assert data["status"] == "active"
     assert "token" in data and data["token"]
