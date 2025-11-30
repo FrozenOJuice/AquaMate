@@ -1,14 +1,8 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { paletteOptions, styleOptions, type PaletteKey, type PaletteOption, type StyleOption } from './presets'
-import {
-  buildPaletteFromCustom,
-  CustomColors,
-  loadJson,
-  saveJson,
-  withAlpha,
-} from './usePaletteUtils'
+import { paletteOptions, styleOptions, type PaletteKey, type PaletteOption, type StyleOption, type StyleKey } from './presets'
+import { buildPaletteFromCustom, CustomColors, withAlpha } from './usePaletteUtils'
 
 type FavoritePalette = {
   id: string
@@ -22,8 +16,11 @@ type FavoritePalette = {
 type ThemeContextValue = {
   paletteKey: PaletteKey
   setPalette: (key: PaletteKey) => void
+  styleKey: StyleKey
+  setStyle: (key: StyleKey) => void
   setCustomPalette: (colors: CustomColors) => void
   palettes: PaletteOption[]
+  styles: StyleOption[]
   favorites: FavoritePalette[]
   addFavorite: (name: string, colors: CustomColors, type?: FavoritePalette['type'], sourceKey?: PaletteKey) => void
   removeFavorite: (id: string) => void
@@ -37,7 +34,10 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue>({
   paletteKey: 'aurora',
   setPalette: () => undefined,
+  styleKey: 'solid',
+  setStyle: () => undefined,
   palettes: paletteOptions,
+  styles: styleOptions,
   setCustomPalette: () => undefined,
   favorites: [],
   addFavorite: () => undefined,
@@ -64,8 +64,9 @@ export function useTheme() {
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   // paletteKey drives which preset or custom palette is active
-  const [paletteKey, setPaletteKey] = useState<PaletteKey>('aurora')
-  const [customColors, setCustomColors] = useState<CustomColors>({ accent: '#8b5cf6', accent2: '#7c3aed', accent3: '#a78bfa' })
+  const [paletteKey, setPaletteKey] = useState<PaletteKey>('custom')
+  const [styleKey, setStyleKey] = useState<StyleKey>('solid')
+  const [customColors, setCustomColors] = useState<CustomColors>({ accent: '#2563eb', accent2: '#1e3a8a', accent3: '#3b82f6' })
   const [favorites, setFavorites] = useState<FavoritePalette[]>([])
   const [userLibrary, setUserLibrary] = useState<FavoritePalette[]>([])
 
@@ -77,57 +78,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     const match = palettes.find((p) => p.key === paletteKey) ?? palettes[0]
     return match
   }, [paletteKey, palettes, customColors])
-  const style = styles[0]
-
-  // Restore persisted choices from previous sessions
-  useEffect(() => {
-    const storedPalette = (loadJson<string>('aquamate:palette') as PaletteKey | null) ?? null
-    const storedCustom = loadJson<CustomColors>('aquamate:custom-colors')
-    const storedFavorites = loadJson<FavoritePalette[]>('aquamate:favorites')
-    const storedUserLib = loadJson<FavoritePalette[]>('aquamate:user-library')
-
-    if (storedPalette === 'custom') {
-      setPaletteKey('custom')
-    } else if (storedPalette && palettes.find((p) => p.key === storedPalette)) {
-      setPaletteKey(storedPalette)
-    }
-    if (storedCustom?.accent) {
-      setCustomColors({
-        accent: storedCustom.accent,
-        accent2: storedCustom.accent2 || storedCustom.accent,
-        accent3: storedCustom.accent3 || storedCustom.accent2 || storedCustom.accent,
-      })
-    }
-    if (Array.isArray(storedFavorites)) {
-      const normalized = storedFavorites.map((f) => ({
-        id: f.id || crypto.randomUUID(),
-        name: f.name || 'Saved palette',
-        colors: {
-          accent: f.colors.accent,
-          accent2: f.colors.accent2,
-          accent3: f.colors.accent3 || f.colors.accent2,
-        },
-        type: f.type === 'premade' ? 'premade' : 'user',
-        sourceKey: f.sourceKey,
-      }))
-      setFavorites(normalized)
-    }
-    if (Array.isArray(storedUserLib)) {
-      const normalized = storedUserLib.map((f) => ({
-        id: f.id || crypto.randomUUID(),
-        name: f.name || 'User color',
-        colors: {
-          accent: f.colors.accent,
-          accent2: f.colors.accent2,
-          accent3: f.colors.accent3 || f.colors.accent2,
-        },
-        type: 'user',
-        sourceKey: f.sourceKey || f.id,
-        isUserLibrary: true,
-      }))
-      setUserLibrary(normalized)
-    }
-  }, [palettes])
+  const style = styles.find((s) => s.key === styleKey) ?? styles[0]
 
   useEffect(() => {
     // Derive surfaces and write them to CSS vars whenever palette/custom colors change
@@ -137,11 +88,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       'd9',
     )})`
 
-    const headerBg = headerGlass
-    const sidebarBg = sidebarGlass
+    const headerBg = style.values.headerBg || headerGlass
+    const sidebarBg = style.values.sidebarBg || sidebarGlass
 
-    const softSurface = 'rgba(255,255,255,0.05)'
-    const softBorder = style.values.glassBorder
+    const softSurface = style.values.surfaceWeak || 'rgba(255,255,255,0.05)'
+    const softBorder = style.values.surfaceWeakBorder || style.values.glassBorder
 
     applyCssVariables({
       accent: palette.values.accent,
@@ -166,9 +117,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       'surface-weak': softSurface,
       'surface-weak-border': softBorder,
     })
-    saveJson('aquamate:palette', palette.key)
-    saveJson('aquamate:custom-colors', customColors)
-    saveJson('aquamate:user-library', userLibrary)
   }, [palette, style, customColors, userLibrary])
 
   const setCustomPalette = (colors: CustomColors) => {
@@ -181,13 +129,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     const newFav: FavoritePalette = { id: crypto.randomUUID(), name: name || 'Custom palette', colors, type, sourceKey }
     const updated = [...favorites, newFav]
     setFavorites(updated)
-    saveJson('aquamate:favorites', updated)
   }
 
   const removeFavorite = (id: string) => {
     const updated = favorites.filter((f) => f.id !== id)
     setFavorites(updated)
-    saveJson('aquamate:favorites', updated)
   }
 
   const applyFavorite = (fav: FavoritePalette) => {
@@ -209,7 +155,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     }
     const updated = [...userLibrary, newEntry]
     setUserLibrary(updated)
-    saveJson('aquamate:user-library', updated)
   }
 
   return (
@@ -217,8 +162,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       value={{
         paletteKey,
         setPalette: setPaletteKey,
+        styleKey,
+        setStyle: setStyleKey,
         setCustomPalette,
         palettes,
+        styles,
         favorites,
         addFavorite,
         removeFavorite,

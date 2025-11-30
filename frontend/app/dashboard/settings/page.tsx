@@ -1,7 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTheme } from '@/components/theme/ThemeProvider'
+import SettingsHeader from './components/SettingsHeader'
+import SettingsSection from './components/SettingsSection'
+import SettingsGroup from './components/SettingsGroup'
+import { PaletteGrid, FavoriteList, ColorMaker, PreviewPanel, type PaletteCardItem } from './colors'
 
 const placeholderSettings = [
   { label: 'Email alerts', description: 'Weekly digest and incident notifications.', value: 'Enabled' },
@@ -15,12 +19,14 @@ export default function SettingsPage() {
     paletteKey,
     setPalette,
     palettes,
+    styleKey,
+    setStyle,
+    styles,
     setCustomPalette,
     customColors,
     favorites,
     addFavorite,
     removeFavorite,
-    applyFavorite,
     userLibrary,
     addUserColor,
     activePalette,
@@ -29,8 +35,6 @@ export default function SettingsPage() {
   const [accent2Input, setAccent2Input] = useState(customColors.accent2 || customColors.accent)
   const [accent3Input, setAccent3Input] = useState(customColors.accent3 || customColors.accent2 || customColors.accent)
   const [favoriteName, setFavoriteName] = useState('')
-  const panelClass =
-    'rounded-2xl border border-panel bg-panel p-5 shadow-glass backdrop-blur-[var(--panel-blur)]'
 
   useEffect(() => {
     setAccentInput(activePalette.accent)
@@ -38,323 +42,198 @@ export default function SettingsPage() {
     setAccent3Input(activePalette.accent3 || activePalette.accent2)
   }, [activePalette])
 
+  const paletteItems: PaletteCardItem[] = useMemo(
+    () => [
+      ...palettes.map((p) => ({
+        id: p.key,
+        name: p.name,
+        colors: {
+          accent: p.values.accent,
+          accent2: p.values.accent2,
+          accent3: p.values.accent3 || p.values.accent2,
+        },
+        type: 'premade' as const,
+        sourceKey: p.key,
+      })),
+      ...userLibrary.map((u) => ({
+        id: u.id,
+        name: u.name,
+        colors: u.colors,
+        type: 'user' as const,
+        sourceKey: u.sourceKey || u.id,
+      })),
+    ],
+    [palettes, userLibrary],
+  )
+
+  const favoriteItems: PaletteCardItem[] = useMemo(
+    () =>
+      favorites.map((fav) => ({
+        id: fav.id,
+        name: fav.name,
+        colors: fav.colors,
+        type: fav.type,
+        sourceKey: fav.sourceKey,
+      })),
+    [favorites],
+  )
+
+  const isSameColors = (a: PaletteCardItem['colors'], b: PaletteCardItem['colors']) =>
+    a.accent === b.accent && a.accent2 === b.accent2 && (a.accent3 || a.accent2) === (b.accent3 || b.accent2)
+
+  const findFavoriteForItem = (item: PaletteCardItem) =>
+    favorites.find((fav) => {
+      const sameType = fav.type === item.type
+      const sameSource = item.type === 'premade' ? fav.sourceKey === item.sourceKey : true
+      const samePalette = isSameColors(
+        { accent: fav.colors.accent, accent2: fav.colors.accent2, accent3: fav.colors.accent3 },
+        item.colors,
+      )
+      return sameType && sameSource && samePalette
+    })
+
+  const handleApply = (item: PaletteCardItem) => {
+    if (item.type === 'premade' && item.sourceKey) {
+      setPalette(item.sourceKey as typeof paletteKey)
+    } else {
+      setCustomPalette(item.colors)
+    }
+  }
+
+  const handleToggleFavorite = (item: PaletteCardItem) => {
+    const existing = findFavoriteForItem(item)
+    if (existing) {
+      removeFavorite(existing.id)
+    } else {
+      addFavorite(item.name, item.colors, item.type, item.sourceKey)
+    }
+  }
+
+  const isActive = (item: PaletteCardItem) =>
+    (item.type === 'premade' && item.sourceKey === paletteKey) ||
+    (item.type === 'user' &&
+      paletteKey === 'custom' &&
+      isSameColors(item.colors, {
+        accent: customColors.accent,
+        accent2: customColors.accent2 || customColors.accent,
+        accent3: customColors.accent3 || customColors.accent2 || customColors.accent,
+      }))
+
+  const isFavorite = (item: PaletteCardItem) => Boolean(findFavoriteForItem(item))
+
   return (
     <div className="space-y-4">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <p className="text-[11px] uppercase tracking-[0.08em] text-white/70">Dashboard · Settings</p>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-sm text-muted">Tune the look of AquaMate and keep the basics handy.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-muted transition hover:border-white/30 hover:text-white"
-            type="button"
-          >
-            Reset
-          </button>
-          <button
-            className="rounded-xl border border-white/10 bg-gradient-to-br from-accent to-accent2 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:shadow-xl"
-            type="button"
-          >
-            Save changes
-          </button>
-        </div>
-      </header>
+      <SettingsHeader
+        eyebrow="Dashboard · Settings"
+        title="Settings"
+        description="Tune the look of AquaMate and keep the basics handy."
+        actions={
+          <>
+            <button
+              className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold text-muted transition hover:border-white/30 hover:text-white"
+              type="button"
+            >
+              Reset
+            </button>
+            <button
+              className="rounded-xl border border-white/10 bg-gradient-to-br from-accent to-accent2 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:shadow-xl"
+              type="button"
+            >
+              Save changes
+            </button>
+          </>
+        }
+      />
 
-      <section className={panelClass}>
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.08em] text-white/70">Theme</p>
-            <h3 className="text-xl font-semibold">Color palette</h3>
-            <p className="text-sm text-muted">
-              Favourites, premade palettes, and your own colors — pick what feels right.
-            </p>
-          </div>
+      <SettingsSection
+        eyebrow="Theme"
+        title="Color palette"
+        description="Favourites, premade palettes, and your own colors — pick what feels right."
+        actions={
           <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold">
             Live preview
           </span>
-        </div>
-
+        }
+      >
         <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="m-0 text-sm font-semibold text-white">Favourites</h4>
-              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/70">
-                Saved
-              </span>
-            </div>
-            {favorites.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-[var(--surface-weak-border)] bg-[var(--surface-weak)] px-3 py-4 text-sm text-muted">
-                No favourites yet. Save a premade or your own colors to reuse them quickly.
-              </div>
-            ) : (
-              <div className="grid grid-flow-col auto-cols-[220px] gap-3 overflow-x-auto pb-2">
-                {favorites.map((fav) => {
-                  const swatches = [
-                    { label: 'Primary', value: fav.colors.accent },
-                    { label: 'Secondary', value: fav.colors.accent2 || fav.colors.accent },
-                    { label: 'Tertiary', value: fav.colors.accent3 || fav.colors.accent2 || fav.colors.accent },
-                  ]
-                  const cardLabel = fav.type === 'premade' ? 'Premade' : 'User made'
-                  return (
-                    <div
-                      key={fav.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => applyFavorite(fav)}
-                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && applyFavorite(fav)}
-                      className="group flex h-full cursor-pointer flex-col gap-3 rounded-xl border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] p-3 transition hover:-translate-y-0.5 hover:border-accent/40"
-                    >
-                      <div className="relative w-full rounded-lg border border-[var(--panel-border)] p-1">
-                        <div
-                          className="w-full rounded-md"
-                          style={{
-                            background: `linear-gradient(135deg, ${fav.colors.accent}, ${fav.colors.accent2 || fav.colors.accent})`,
-                            minHeight: '110px',
-                            maxHeight: '130px',
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="m-0 text-base font-semibold">{fav.name}</p>
-                          <span className="rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white">{cardLabel}</span>
-                        </div>
-                        {swatches.map((sw, idx) => (
-                          <div key={`${sw.value}-${idx}`} className="flex items-center gap-2 text-xs text-muted">
-                            <span className="h-4 w-4 rounded border border-white/20" style={{ background: sw.value }} />
-                            <span className="text-white/80">{sw.value}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between">
-                        <p className="m-0 text-[11px] uppercase tracking-[0.08em] text-muted">Click to apply</p>
-                        <button
-                          className="rounded-lg border border-white/15 px-3 py-1 text-[11px] font-semibold text-muted transition hover:border-red-400/60 hover:text-white"
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removeFavorite(fav.id)
-                          }}
-                        >
-                          Unfavourite
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <h4 className="m-0 text-sm font-semibold text-white">All colors</h4>
-              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/70">
-                Mixed
-              </span>
-            </div>
-            <div className="grid grid-flow-col auto-cols-[220px] gap-3 overflow-x-auto pb-2">
-              {[...palettes.map((p) => ({
-                id: p.key,
-                name: p.name,
-                colors: { accent: p.values.accent, accent2: p.values.accent2, accent3: p.values.accent3 || p.values.accent2 },
-                type: 'premade' as const,
-                sourceKey: p.key,
-              })), ...userLibrary.map((u) => ({
-                id: u.id,
-                name: u.name,
-                colors: u.colors,
-                type: 'user' as const,
-                sourceKey: u.sourceKey || u.id,
-              }))].map((item) => {
-                const swatches = [
-                  { label: 'Primary', value: item.colors.accent },
-                  { label: 'Secondary', value: item.colors.accent2 || item.colors.accent },
-                  { label: 'Tertiary', value: item.colors.accent3 || item.colors.accent2 || item.colors.accent },
-                ]
-                const cardLabel = item.type === 'premade' ? 'Premade' : 'User made'
-                const isActive =
-                  (item.type === 'premade' && item.sourceKey === paletteKey) ||
-                  (item.type === 'user' &&
-                    paletteKey === 'custom' &&
-                    customColors.accent === item.colors.accent &&
-                    customColors.accent2 === item.colors.accent2 &&
-                    (customColors.accent3 || customColors.accent2) === (item.colors.accent3 || item.colors.accent2))
-                const fav = favorites.find(
-                  (f) =>
-                    f.type === item.type &&
-                    (item.type === 'premade' ? f.sourceKey === item.sourceKey : true) &&
-                    f.colors.accent === item.colors.accent &&
-                    f.colors.accent2 === item.colors.accent2 &&
-                    (f.colors.accent3 || f.colors.accent2) === (item.colors.accent3 || item.colors.accent2),
-                )
-                const handleApply = () =>
-                  item.type === 'premade' && item.sourceKey ? setPalette(item.sourceKey) : setCustomPalette(item.colors)
+          <SettingsGroup title="Surface style" description="Choose between solid surfaces or glass effects.">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+              {styles.map((style) => {
+                const active = style.key === styleKey
                 return (
-                  <div
-                    key={`${item.type}-${item.id}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={handleApply}
-                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleApply()}
-                    className={`group flex h-full cursor-pointer flex-col gap-3 rounded-xl border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] p-3 text-left transition hover:-translate-y-0.5 hover:border-accent/40 ${
-                      isActive ? 'border-accent shadow-lg shadow-black/40' : ''
+                  <button
+                    key={style.key}
+                    type="button"
+                    onClick={() => setStyle(style.key)}
+                    className={`flex flex-col items-start gap-2 rounded-xl border px-4 py-3 text-left transition ${
+                      active
+                        ? 'border-accent/60 bg-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.4)]'
+                        : 'border-white/10 bg-white/5 hover:border-accent/30'
                     }`}
                   >
-                    <div className="relative w-full rounded-lg border border-[var(--panel-border)] p-1">
-                      <div
-                        className="w-full rounded-md"
-                        style={{
-                          background: `linear-gradient(135deg, ${item.colors.accent}, ${item.colors.accent2 || item.colors.accent})`,
-                          minHeight: '110px',
-                          maxHeight: '130px',
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="m-0 text-base font-semibold">{item.name}</p>
-                        <span className="rounded-md bg-white/10 px-2 py-1 text-[11px] font-semibold text-white">{cardLabel}</span>
-                      </div>
-                      {swatches.map((sw, idx) => (
-                        <div key={`${sw.value}-${idx}`} className="flex items-center gap-2 text-xs text-muted">
-                          <span className="h-4 w-4 rounded border border-white/20" style={{ background: sw.value }} />
-                          <span className="text-white/80">{sw.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="m-0 text-[11px] uppercase tracking-[0.08em] text-muted">Click to apply</p>
-                      <button
-                        className={`rounded-lg border px-3 py-1 text-[11px] font-semibold transition ${
-                          fav ? 'border-red-400/60 text-red-200 hover:border-red-300' : 'border-white/15 text-muted hover:border-accent/40 hover:text-white'
-                        }`}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (fav) {
-                            removeFavorite(fav.id)
-                          } else {
-                            addFavorite(item.name, item.colors, item.type, item.type === 'premade' ? item.sourceKey : undefined)
-                          }
-                        }}
-                      >
-                        {fav ? 'Unfavourite' : 'Favourite'}
-                      </button>
-                    </div>
-                  </div>
+                    <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                      {style.name}
+                      {active ? (
+                        <span className="rounded-full bg-accent px-2 py-[2px] text-[10px] font-bold uppercase tracking-[0.08em] text-white">
+                          Default
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-xs text-muted">{style.description}</span>
+                  </button>
                 )
               })}
             </div>
-          </div>
+          </SettingsGroup>
 
-          <div className="space-y-3">
-            <div className="space-y-2 rounded-xl border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="m-0 text-sm font-semibold text-white">Color maker</p>
-                  <p className="m-0 text-xs text-muted">Create a palette and save it to your library.</p>
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <label className="flex items-center justify-between gap-3 rounded-lg border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] px-3 py-2">
-                  <div>
-                    <p className="m-0 text-sm font-semibold">Primary accent</p>
-                    <p className="m-0 text-xs text-muted">Buttons, highlights, gradients.</p>
-                  </div>
-                  <input
-                    type="color"
-                    value={accentInput}
-                    onChange={(e) => setAccentInput(e.target.value)}
-                    className="h-10 w-16 cursor-pointer rounded-md border border-white/20 bg-transparent p-1"
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-3 rounded-lg border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] px-3 py-2">
-                  <div>
-                    <p className="m-0 text-sm font-semibold">Secondary accent</p>
-                    <p className="m-0 text-xs text-muted">Used in gradients and outlines.</p>
-                  </div>
-                  <input
-                    type="color"
-                    value={accent2Input}
-                    onChange={(e) => setAccent2Input(e.target.value)}
-                    className="h-10 w-16 cursor-pointer rounded-md border border-white/20 bg-transparent p-1"
-                  />
-                </label>
-                <label className="flex items-center justify-between gap-3 rounded-lg border border-[var(--surface-weak-border)] bg-[var(--surface-weak)] px-3 py-2">
-                  <div>
-                    <p className="m-0 text-sm font-semibold">Tertiary accent</p>
-                    <p className="m-0 text-xs text-muted">Extra accent for gradients.</p>
-                  </div>
-                  <input
-                    type="color"
-                    value={accent3Input}
-                    onChange={(e) => setAccent3Input(e.target.value)}
-                    className="h-10 w-16 cursor-pointer rounded-md border border-white/20 bg-transparent p-1"
-                  />
-                </label>
-              </div>
+          <SettingsGroup title="Favourites" eyebrow="Saved">
+            <FavoriteList
+              items={favoriteItems}
+              onApply={handleApply}
+              onRemove={(id) => removeFavorite(id)}
+            />
+          </SettingsGroup>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  className="rounded-xl border border-white/10 bg-gradient-to-br from-accent to-accent2 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:shadow-xl"
-                  type="button"
-                  onClick={() => setCustomPalette({ accent: accentInput, accent2: accent2Input, accent3: accent3Input })}
-                >
-                  Apply custom colors
-                </button>
+          <PaletteGrid
+            title="All colors"
+            badge="Mixed"
+            items={paletteItems}
+            isActive={isActive}
+            isFavorite={isFavorite}
+            onApply={handleApply}
+            onToggleFavorite={handleToggleFavorite}
+          />
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Palette name"
-                    value={favoriteName}
-                    onChange={(e) => setFavoriteName(e.target.value)}
-                    className="rounded-lg border border-white/15 bg-transparent px-3 py-2 text-sm text-white placeholder:text-muted focus:border-accent focus:outline-none"
-                  />
-                  <button
-                    className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-accent/40"
-                    type="button"
-                    onClick={() => {
-                      const name = favoriteName || 'User palette'
-                      addUserColor({ name, colors: { accent: accentInput, accent2: accent2Input, accent3: accent3Input }, type: 'user' })
-                      setFavoriteName('')
-                    }}
-                  >
-                    Save to colors
-                  </button>
-                  <button
-                    className="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:border-accent/40"
-                    type="button"
-                    onClick={() => {
-                      addFavorite(favoriteName || 'Custom favourite', { accent: accentInput, accent2: accent2Input, accent3: accent3Input }, 'user')
-                      setFavoriteName('')
-                    }}
-                  >
-                    Save & favourite
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SettingsGroup title="Color maker" description="Create a palette and save it to your library.">
+            <ColorMaker
+              accent={accentInput}
+              accent2={accent2Input}
+              accent3={accent3Input}
+              favoriteName={favoriteName}
+              onChangeAccent={setAccentInput}
+              onChangeAccent2={setAccent2Input}
+              onChangeAccent3={setAccent3Input}
+              onChangeFavoriteName={setFavoriteName}
+              onApply={(colors) => setCustomPalette(colors)}
+              onSaveToLibrary={(name, colors) => {
+                addUserColor({ name, colors, type: 'user' })
+                setFavoriteName('')
+              }}
+              onSaveFavorite={(name, colors) => {
+                addFavorite(name, colors, 'user')
+                setFavoriteName('')
+              }}
+            />
+          </SettingsGroup>
         </div>
-      </section>
+      </SettingsSection>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-3">
-        <section className={panelClass}>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.08em] text-white/70">General</p>
-              <h3 className="text-xl font-semibold">Account & org</h3>
-              <p className="text-sm text-muted">Placeholder settings you can wire later.</p>
-            </div>
-          </div>
+        <SettingsSection
+          eyebrow="General"
+          title="Account & org"
+          description="Placeholder settings you can wire later."
+        >
           <ul className="grid gap-2">
             {placeholderSettings.map((setting) => (
               <li
@@ -371,61 +250,15 @@ export default function SettingsPage() {
               </li>
             ))}
           </ul>
-        </section>
+        </SettingsSection>
 
-        <section className={panelClass}>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.08em] text-white/70">Preview</p>
-              <h3 className="text-xl font-semibold">Style snapshot</h3>
-              <p className="text-sm text-muted">A quick look at how cards will render with your picks.</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <div className="rounded-xl border border-panel bg-panel p-4 shadow-[var(--panel-shadow)] backdrop-blur-[var(--panel-blur)]">
-              <div className="mb-1 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-accent shadow-[0_0_0_6px_rgba(139,92,246,0.15)]" />
-                  <p className="m-0 font-semibold">Team status</p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold">
-                  Live
-                </span>
-              </div>
-              <p className="m-0 text-sm text-muted">Active lifeguards · Check-ins · Incident queue</p>
-              <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3">
-                <div>
-                  <p className="m-0 text-xs text-muted">On duty</p>
-                  <p className="m-0 text-2xl font-extrabold">24</p>
-                </div>
-                <div>
-                  <p className="m-0 text-xs text-muted">Incidents today</p>
-                  <p className="m-0 text-2xl font-extrabold">1</p>
-                </div>
-                <div>
-                  <p className="m-0 text-xs text-muted">Sites</p>
-                  <p className="m-0 text-2xl font-extrabold">6</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 rounded-xl border border-panel bg-panel p-4 shadow-[var(--panel-shadow)] backdrop-blur-[var(--panel-blur)]">
-              <div className="flex items-center justify-between gap-3">
-                <p className="m-0 font-semibold">Primary action</p>
-                <button
-                  className="rounded-xl border border-white/10 bg-gradient-to-br from-accent to-accent2 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:shadow-xl"
-                  type="button"
-                >
-                  Run workflow
-                </button>
-              </div>
-              <p className="m-0 text-sm text-muted">
-                Notice how the accent and borders change with your selections.
-              </p>
-            </div>
-          </div>
-        </section>
+        <SettingsSection
+          eyebrow="Preview"
+          title="Style snapshot"
+          description="A quick look at how cards will render with your picks."
+        >
+          <PreviewPanel />
+        </SettingsSection>
       </div>
     </div>
   )

@@ -40,11 +40,11 @@ export type CustomColors = {
 }
 
 export const buildPaletteFromCustom = (colors: CustomColors) => {
-  const accent = colors.accent || '#8b5cf6'
+  const accent = colors.accent || '#2563eb'
   const accent2 = colors.accent2 || mix(accent, '#ffffff', 0.8)
   const accent3 = colors.accent3 || mix(accent2, '#ffffff', 0.6)
-  const bg1 = mix(accent, '#05050a', 0.12)
-  const bg2 = mix(accent2, '#0a1120', 0.25)
+  const bg1 = mix(accent, '#0a0b0f', 0.12)
+  const bg2 = mix(accent2, '#131722', 0.2)
   return {
     accent,
     accent2,
@@ -52,24 +52,5 @@ export const buildPaletteFromCustom = (colors: CustomColors) => {
     bg1,
     bg2,
     muted: 'rgba(255,255,255,0.78)',
-  }
-}
-
-export const loadJson = <T,>(key: string): T | null => {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = window.localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : null
-  } catch {
-    return null
-  }
-}
-
-export const saveJson = (key: string, value: unknown) => {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    /* ignore */
   }
 }

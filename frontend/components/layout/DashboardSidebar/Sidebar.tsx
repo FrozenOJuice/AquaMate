@@ -3,19 +3,19 @@
 import React from 'react'
 import Link from 'next/link'
 import { navItems } from './navItems'
-import { useSidebar } from './useSidebar'
+import { useSidebar } from './SidebarContext'
 
 export default function DashboardSidebar() {
   const { isExpanded, toggle } = useSidebar()
 
   return (
     <aside
-      className={`fixed left-0 top-[72px] z-30 flex h-[calc(100vh-72px)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)] backdrop-blur-lg transition-all duration-300 ${
+      className={`fixed left-0 top-0 z-30 flex h-screen flex-col overflow-y-auto border-r border-[var(--sidebar-border)] bg-[var(--sidebar-bg)]/90 backdrop-blur-lg transition-all duration-300 ${
         isExpanded ? 'w-[240px] px-3' : 'w-20 px-2'
       }`}
     >
       <button
-        className="mb-2 flex h-10 w-full items-center justify-center rounded-lg border border-accent/20 bg-[linear-gradient(135deg,rgba(139,92,246,0.05),rgba(124,58,237,0.02))] text-xs font-bold text-accent transition hover:border-accent/50 hover:bg-[linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.1))] hover:shadow-[0_4px_12px_rgba(139,92,246,0.15)] active:scale-[0.98]"
+        className="mb-2 mt-4 flex h-10 w-full items-center justify-center rounded-lg border border-accent/20 bg-[linear-gradient(135deg,rgba(139,92,246,0.05),rgba(124,58,237,0.02))] text-xs font-bold text-accent transition hover:border-accent/50 hover:bg-[linear-gradient(135deg,rgba(139,92,246,0.15),rgba(124,58,237,0.1))] hover:shadow-[0_4px_12px_rgba(139,92,246,0.15)] active:scale-[0.98]"
         onClick={toggle}
         aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
       >

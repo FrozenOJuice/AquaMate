@@ -1,22 +1,21 @@
 'use client'
 
 import React from 'react'
-import AppHeader from '@/components/layout/AppHeader'
-import AppFooter from '@/components/layout/AppFooter'
-import DashboardSidebar from '@/components/layout/sidebar/DashboardSidebar'
-import { SidebarProvider, useSidebar } from '@/components/layout/sidebar/useSidebar'
+import DashboardHeader from '@/components/layout/DashboardHeader'
+import DashboardSidebar from '@/components/layout/DashboardSidebar/Sidebar'
+import { SidebarProvider, useSidebar } from '@/components/layout/DashboardSidebar/SidebarContext'
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { isExpanded } = useSidebar()
+  const offset = isExpanded ? 'ml-[240px]' : 'ml-20'
 
   return (
-    <div className="flex min-h-[calc(100vh-72px)]">
+    <div className="relative min-h-screen overflow-x-hidden">
       <DashboardSidebar />
-      <main
-        className={`flex-1 overflow-y-auto p-6 transition-all duration-300 ${isExpanded ? 'ml-[240px]' : 'ml-20'}`}
-      >
-        {children}
-      </main>
+      <div className={`min-h-screen flex flex-col transition-all duration-300 ${offset}`}>
+        <DashboardHeader />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6">{children}</main>
+      </div>
     </div>
   )
 }
@@ -24,9 +23,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AppHeader />
       <DashboardShell>{children}</DashboardShell>
-      <AppFooter />
     </SidebarProvider>
   )
 }

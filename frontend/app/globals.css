@@ -4,25 +4,26 @@
 
 @layer base {
   :root {
-    --bg-1: #0f0520;
-    --bg-2: #2b1048;
-    --glass: rgba(255, 255, 255, 0.06);
-    --glass-border: rgba(255, 255, 255, 0.12);
-    --accent: #8b5cf6;
-    --accent-2: #7c3aed;
+    --bg-1: #0c0d10;
+    --bg-2: #1a1c22;
+    --glass: rgba(255, 255, 255, 0.02);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --accent: #2563eb;
+    --accent-2: #1e3a8a;
+    --accent-3: #3b82f6;
     --muted: rgba(255, 255, 255, 0.75);
-    --glass-shadow: 0 8px 30px rgba(11, 7, 23, 0.6);
-    --panel-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-    --panel-border: rgba(255, 255, 255, 0.12);
-    --panel-blur: 12px;
+    --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    --panel-bg: rgba(22, 24, 30, 1);
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-blur: 0px;
     --panel-shadow: var(--glass-shadow);
-    --header-bg: linear-gradient(180deg, rgba(11, 7, 23, 0.28), rgba(11, 7, 23, 0.12));
-    --header-border: rgba(255, 255, 255, 0.04);
-    --sidebar-bg: linear-gradient(180deg, rgba(43, 16, 72, 0.5), rgba(11, 7, 23, 0.8));
-    --sidebar-border: rgba(255, 255, 255, 0.04);
+    --header-bg: rgba(12, 13, 16, 0.96);
+    --header-border: rgba(255, 255, 255, 0.08);
+    --sidebar-bg: rgba(12, 13, 16, 0.94);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
     --logo-fill-start: var(--accent);
     --logo-fill-end: var(--accent-2);
-    --surface-weak: rgba(255, 255, 255, 0.05);
+    --surface-weak: rgba(255, 255, 255, 0.04);
     --surface-weak-border: rgba(255, 255, 255, 0.08);
   }
 
@@ -31,13 +32,13 @@
   }
 
   html {
-    @apply min-h-screen bg-[radial-gradient(1200px_600px_at_10%_10%,rgba(124,58,237,0.18),transparent_8%),radial-gradient(1000px_500px_at_90%_90%,rgba(139,92,246,0.12),transparent_12%),linear-gradient(180deg,var(--bg-1)_0%,var(--bg-2)_100%)] text-white antialiased;
+    @apply min-h-screen bg-[linear-gradient(180deg,var(--bg-1)_0%,var(--bg-2)_100%)] text-white antialiased;
     background-attachment: fixed;
     overscroll-behavior: none;
   }
 
   body {
-    @apply min-h-screen bg-[radial-gradient(1200px_600px_at_10%_10%,rgba(124,58,237,0.18),transparent_8%),radial-gradient(1000px_500px_at_90%_90%,rgba(139,92,246,0.12),transparent_12%),linear-gradient(180deg,var(--bg-1)_0%,var(--bg-2)_100%)] text-white font-sans;
+    @apply min-h-screen bg-[linear-gradient(180deg,var(--bg-1)_0%,var(--bg-2)_100%)] text-white font-sans;
     background-attachment: fixed;
     overscroll-behavior: none;
   }

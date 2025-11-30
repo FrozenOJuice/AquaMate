@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import RootShell from '@/components/layout/RootShell'
+import ThemeProvider from '@/components/theme/ThemeProvider'
+import AppShell from '@/components/layout/AppShell'
 
 export const metadata: Metadata = {
   title: 'AquaMate',
@@ -12,7 +13,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head />
       <body className="min-h-screen">
-        <RootShell>{children}</RootShell>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   )
