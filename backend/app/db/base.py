@@ -5,4 +5,5 @@ class Base(DeclarativeBase):
     """Base class for SQLAlchemy models."""
 
 
-# Future: import all models here so Alembic autogenerate picks them up.
+# Import models here so Alembic autogenerate picks them up.
+from app.models.user import User  # noqa: F401,E402
