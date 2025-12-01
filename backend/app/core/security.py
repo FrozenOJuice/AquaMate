@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.repositories.user_repo import UserRepository
 
 settings = get_settings()
 
@@ -82,6 +81,8 @@ def get_current_user(
             detail="Invalid or expired session",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    from app.repositories.user_repo import UserRepository  # local import to avoid circular
 
     user = UserRepository(db).get(user_id)
     if not user:

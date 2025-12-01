@@ -32,6 +32,9 @@ target_metadata = Base.metadata
 
 # TODO: define naming conventions on metadata for consistent constraint names.
 
+# Import models here so Alembic sees them (without importing during app startup).
+from app.models import user  # noqa: E402,F401
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
