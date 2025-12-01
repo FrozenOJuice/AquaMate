@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     session_secret: str = "change-me"  # TODO: set a strong secret in production.
     session_max_age_seconds: int = 60 * 60 * 24 * 7  # 7 days
     redis_url: str = "redis://redis:6379/0"
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_sender: str = "no-reply@aquamate.local"
+    smtp_use_tls: bool = True
 
     model_config = SettingsConfigDict(
         env_file=".env",
