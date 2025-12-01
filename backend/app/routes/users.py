@@ -31,15 +31,12 @@ def create_user(
     payload: UserCreate,
     service: UserService = Depends(get_user_service),
 ):
-    if service.get_by_email(payload.email):
+    try:
+        return service.create_user(payload)
+    except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already in use"
-        )
-    if service.get_by_username(payload.username):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Username already in use"
-        )
-    return service.create_user(payload)
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
 
 
 @router.get("/{user_id}", response_model=UserRead)
@@ -63,16 +60,12 @@ def update_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    if payload.email and payload.email != user.email and service.get_by_email(payload.email):
+    try:
+        return service.update_user(user_id, payload)
+    except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already in use"
-        )
-    if payload.username and payload.username != user.username and service.get_by_username(payload.username):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Username already in use"
-        )
-
-    return service.update_user(user_id, payload)
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

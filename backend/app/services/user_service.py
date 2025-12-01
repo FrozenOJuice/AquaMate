@@ -12,6 +12,7 @@ class UserService:
         self.repo = UserRepository(db)
 
     def create_user(self, data: UserCreate) -> User:
+        self._ensure_unique(data.email, data.username)
         return self.repo.create(data)
 
     def get_user(self, user_id: UUID) -> User | None:
@@ -30,6 +31,10 @@ class UserService:
         user = self.repo.get(user_id)
         if not user:
             return None
+        if data.email and data.email != user.email:
+            self._ensure_unique(email=data.email)
+        if data.username and data.username != user.username:
+            self._ensure_unique(username=data.username)
         return self.repo.update(user, data)
 
     def deactivate_user(self, user_id: UUID) -> User | None:
@@ -50,6 +55,12 @@ class UserService:
             return False
         self.repo.delete(user)
         return True
+
+    def _ensure_unique(self, email: str | None = None, username: str | None = None) -> None:
+        if email and self.repo.get_by_email(email):
+            raise ValueError("Email already in use")
+        if username and self.repo.get_by_username(username):
+            raise ValueError("Username already in use")
 
 
 # TODO: add uniqueness validation, role-based access checks, and domain errors.

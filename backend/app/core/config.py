@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     debug: bool = True
     database_url: Optional[str] = None
     cors_origins: str = "*"  # Comma-separated; tighten in production.
+    session_secret: str = "change-me"  # TODO: set a strong secret in production.
+    session_max_age_seconds: int = 60 * 60 * 24 * 7  # 7 days
 
     model_config = SettingsConfigDict(
         env_file=".env",
