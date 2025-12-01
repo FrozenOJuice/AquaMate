@@ -1,11 +1,13 @@
 import logging
 import threading
+import time
 from typing import Callable
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest
+from app.models.user import UserStatus
 from app.services.user_service import UserService
 from app.db.session import get_db
 from sqlalchemy.orm import Session
@@ -14,6 +16,12 @@ from app.core.security import hash_password
 
 router = APIRouter(prefix="/password", tags=["password"])
 logger = logging.getLogger(__name__)
+_RATE_LIMIT_WINDOW_SECONDS = 300
+_IDENTIFIER_ATTEMPT_LIMIT = 5
+_IP_ATTEMPT_LIMIT = 20
+_rate_limit_lock = threading.Lock()
+_identifier_attempts: dict[str, list[float]] = {}
+_ip_attempts: dict[str, list[float]] = {}
 
 
 def get_user_service(db: Session = Depends(get_db)) -> UserService:
@@ -44,21 +52,47 @@ def _dispatch_reset_token(user, token: str) -> None:
     threading.Thread(target=_deliver, name=f"reset-token-{user.id}", daemon=True).start()
 
 
+def _record_and_check_limit(key: str, bucket: dict[str, list[float]], limit: int) -> bool:
+    now = time.monotonic()
+    cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
+    with _rate_limit_lock:
+        recent = [ts for ts in bucket.get(key, []) if ts >= cutoff]
+        recent.append(now)
+        bucket[key] = recent
+        return len(recent) > limit
+
+
+def _get_client_ip(request: Request | None) -> str:
+    if request and request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
 def forgot_password(
     payload: ForgotPasswordRequest,
     service: UserService = Depends(get_user_service),
     issue_reset_token: Callable[[UUID], str] = Depends(get_reset_token_creator),
+    request: Request | None = None,
 ):
     """
     Placeholder: Issue password reset token via email/SMS.
     """
-    # TODO: rate-limit requests per identifier/IP to prevent enumeration/abuse.
+    identifier_key = payload.identifier.lower()
+    if _record_and_check_limit(identifier_key, _identifier_attempts, _IDENTIFIER_ATTEMPT_LIMIT):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
+
+    ip_key = _get_client_ip(request)
+    if _record_and_check_limit(ip_key, _ip_attempts, _IP_ATTEMPT_LIMIT):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
+
     user = service.get_by_identifier(payload.identifier)
     if not user:
         return {"message": "If the account exists, a reset link will be sent"}
 
-    # TODO: validate user status (e.g., active) before issuing reset tokens.
+    if user.status != UserStatus.ACTIVE:
+        return {"message": "If the account exists, a reset link will be sent"}
+
     token = issue_reset_token(user.id)
     _dispatch_reset_token(user, token)
     return {"message": "Reset token generated"}
