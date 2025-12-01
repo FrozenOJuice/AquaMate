@@ -1,5 +1,6 @@
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -54,7 +55,7 @@ class UserUpdate(BaseModel):
 class UserRead(UserBase):
     """Response model returned to clients."""
     id: UUID
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
