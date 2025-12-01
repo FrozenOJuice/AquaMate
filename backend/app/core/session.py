@@ -11,6 +11,7 @@ settings = get_settings()
 
 SESSION_PREFIX = "session:"
 SESSION_SET_PREFIX = "user_sessions:"
+RESET_TOKEN_PREFIX = "reset:"
 
 
 def _session_key(session_id: str) -> str:
@@ -19,6 +20,10 @@ def _session_key(session_id: str) -> str:
 
 def _user_sessions_key(user_id: UUID) -> str:
     return f"{SESSION_SET_PREFIX}{user_id}"
+
+
+def _reset_key(token: str) -> str:
+    return f"{RESET_TOKEN_PREFIX}{token}"
 
 
 def create_session(user_id: UUID, user_agent: Optional[str] = None, ip: Optional[str] = None) -> str:
@@ -113,3 +118,25 @@ def revoke_session_for_user(user_id: UUID, session_id: str) -> bool:
     redis_client.delete(_session_key(session_id))
     redis_client.srem(_user_sessions_key(user_id), session_id)
     return True
+
+
+def create_reset_token(user_id: UUID, ttl_seconds: int = 3600) -> str:
+    token = secrets.token_urlsafe(32)
+    payload = {
+        "user_id": str(user_id),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    redis_client.setex(_reset_key(token), ttl_seconds, json.dumps(payload))
+    return token
+
+
+def consume_reset_token(token: str) -> UUID | None:
+    raw = redis_client.get(_reset_key(token))
+    if not raw:
+        return None
+    redis_client.delete(_reset_key(token))
+    try:
+        payload = json.loads(raw)
+        return UUID(payload.get("user_id"))
+    except (ValueError, TypeError, json.JSONDecodeError):
+        return None
