@@ -5,60 +5,48 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.user import UserRole, UserStatus
-from app.schemas.validators import PASSWORD_DESCRIPTION, USERNAME_PATTERN, validate_password_strength
+from app.schemas import validators
 
 
 class UserBase(BaseModel):
     """Shared fields for user data used across create/read/update."""
-    username: str = Field(..., min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    username: str = Field(..., description="3-50 chars; letters, numbers, _, ., - allowed.")
     email: EmailStr
     role: UserRole = UserRole.APPLICANT
     status: UserStatus = UserStatus.ACTIVE
 
+    _validate_username = field_validator("username")(validators.validate_username)
+    _validate_email = field_validator("email")(validators.validate_email)
+
 
 class UserCreate(UserBase):
     """Payload for creating a new user (includes password)."""
-    password: str = Field(
-        ...,
-        min_length=12,
-        max_length=255,
-        description=PASSWORD_DESCRIPTION,
-    )
+    password: str = Field(..., description=validators.PASSWORD_DESCRIPTION)
 
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        return validate_password_strength(v)
+    _validate_password = field_validator("password")(validators.validate_password)
 
 
 class UserUpdate(BaseModel):
     """Partial update payload; all fields optional."""
-    username: Optional[str] = Field(None, min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    username: Optional[str] = Field(None, description="3-50 chars; letters, numbers, _, ., - allowed.")
     email: Optional[EmailStr] = None
-    password: Optional[str] = Field(
-        None,
-        min_length=12,
-        max_length=255,
-        description=PASSWORD_DESCRIPTION,
-    )
+    password: Optional[str] = Field(None, description=validators.PASSWORD_DESCRIPTION)
     role: Optional[UserRole] = None
     status: Optional[UserStatus] = None
 
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return v
-        return validate_password_strength(v)
+    _validate_username = field_validator("username")(validators.validate_username)
+    _validate_email = field_validator("email")(validators.validate_email)
+    _validate_password = field_validator("password")(validators.validate_password)
 
 
-class UserRead(UserBase):
+class UserRead(BaseModel):
     """Response model returned to clients."""
     id: UUID
+    username: str
+    email: EmailStr
+    role: UserRole
+    status: UserStatus
     created_at: datetime
 
     class Config:
         from_attributes = True
-
-
-# TODO: add role-based response variants if needed.
