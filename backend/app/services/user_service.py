@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.core.security import hash_password
 from app.repositories.user_repo import UserRepository
 from app.schemas.user import UserCreate
 
@@ -23,6 +24,13 @@ class UserService:
         if "@" in identifier:
             return self.get_by_email(identifier)
         return self.get_by_username(identifier)
+
+    def set_password(self, user: User, new_password: str) -> User:
+        user.hashed_password = hash_password(new_password)
+        self.repo.db.add(user)
+        self.repo.db.commit()
+        self.repo.db.refresh(user)
+        return user
 
     def _ensure_unique(self, email: str | None = None, username: str | None = None) -> None:
         if email and self.repo.get_by_email(email):

@@ -6,18 +6,17 @@ from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.session import (
-    create_session,
-    get_user_id_for_session,
-    revoke_session,
-    revoke_all_sessions,
-)
 from app.db.session import get_db
+from app.services.session_service import SessionService
 
 settings = get_settings()
 
 _pwd_hasher = PasswordHasher()
 SESSION_COOKIE_NAME = "session"
+
+
+def get_session_service() -> SessionService:
+    return SessionService(settings)
 
 
 def hash_password(password: str) -> str:
@@ -52,6 +51,7 @@ def set_session_cookie(response, token: str) -> None:
 def get_current_user(
     session_token: str | None = Cookie(None, alias=SESSION_COOKIE_NAME),
     db: Session = Depends(get_db),
+    session_service: SessionService = Depends(get_session_service),
 ):
     """
     Dependency to fetch the current user from a signed session cookie.
@@ -59,11 +59,11 @@ def get_current_user(
     if not session_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-    user_id = get_user_id_for_session(session_token)
+    user_id = session_service.get_user_id_for_session(session_token)
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
