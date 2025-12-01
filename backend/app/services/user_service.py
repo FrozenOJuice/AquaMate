@@ -17,6 +17,12 @@ class UserService:
     def get_user(self, user_id: UUID) -> User | None:
         return self.repo.get(user_id)
 
+    def get_by_email(self, email: str) -> User | None:
+        return self.repo.get_by_email(email)
+
+    def get_by_username(self, username: str) -> User | None:
+        return self.repo.get_by_username(username)
+
     def list_users(self, *, limit: int = 100, offset: int = 0) -> list[User]:
         return self.repo.list(limit=limit, offset=offset)
 

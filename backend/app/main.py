@@ -3,6 +3,7 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes.users import router as users_router
 from .core.config import get_settings
 
 settings = get_settings()
@@ -35,6 +36,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(users_router)
+
 
 @app.get("/health", tags=["health"])
 def health_check():
@@ -42,6 +45,6 @@ def health_check():
 
 
 
-# TODO: import routers from app packages (e.g., users) and include them under /api/.
+# TODO: add more routers (e.g., auth) and group under /api if desired.
 # TODO: add request logging middleware, metrics, rate limiting, structured error handling,
 #       database session lifespan events, and auth before production.
