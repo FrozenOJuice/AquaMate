@@ -26,19 +26,6 @@ class UserCreate(UserBase):
     _validate_password = field_validator("password")(validators.validate_password)
 
 
-class UserUpdate(BaseModel):
-    """Partial update payload; all fields optional."""
-    username: Optional[str] = Field(None, description="3-50 chars; letters, numbers, _, ., - allowed.")
-    email: Optional[EmailStr] = None
-    password: Optional[str] = Field(None, description=validators.PASSWORD_DESCRIPTION)
-    role: Optional[UserRole] = None
-    status: Optional[UserStatus] = None
-
-    _validate_username = field_validator("username")(validators.validate_username)
-    _validate_email = field_validator("email")(validators.validate_email)
-    _validate_password = field_validator("password")(validators.validate_password)
-
-
 class UserRead(BaseModel):
     """Response model returned to clients."""
     id: UUID
