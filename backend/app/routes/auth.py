@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie, status
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -6,9 +6,13 @@ from app.core.security import (
     set_session_cookie,
     verify_password,
 )
-from app.core.session import create_session, revoke_session
+from app.core.session import (
+    create_session,
+    revoke_session,
+)
 from app.db.session import get_db
 from app.models.user import User
+from app.schemas.auth import LoginRequest
 from app.schemas.user import UserCreate, UserRead
 from app.services.user_service import UserService
 
@@ -28,7 +32,8 @@ def register(
     try:
         user = service.create_user(payload)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        detail = {"code": "account_exists", "message": "Account already exists"}
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
 
     session_id = create_session(user.id)
     set_session_cookie(response, session_id)
@@ -37,16 +42,16 @@ def register(
 
 @router.post("/login", response_model=UserRead)
 def login(
-    username: str,
-    password: str,
+    payload: LoginRequest,
     response: Response,
     service: UserService = Depends(get_user_service),
 ):
-    user = service.get_by_username(username)
-    if not user or not verify_password(password, user.hashed_password):
+    user = service.get_by_identifier(payload.identifier)
+    if not user or not verify_password(payload.password, user.hashed_password):
+        detail = {"code": "invalid_credentials", "message": "Invalid credentials"}
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail=detail,
             headers={"WWW-Authenticate": "Bearer"},
         )
 

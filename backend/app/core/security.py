@@ -6,7 +6,12 @@ from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.session import create_session, get_user_id_for_session, revoke_session
+from app.core.session import (
+    create_session,
+    get_user_id_for_session,
+    revoke_session,
+    revoke_all_sessions,
+)
 from app.db.session import get_db
 
 settings = get_settings()
@@ -41,6 +46,7 @@ def set_session_cookie(response, token: str) -> None:
         samesite="lax",
         max_age=settings.session_max_age_seconds,
     )
+    # TODO: set domain/path if serving API under a subdomain.
 
 
 def get_current_user(

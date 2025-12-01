@@ -3,8 +3,9 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes.auth import router as auth_router
 from .core.config import get_settings
+from app.routes.auth import router as auth_router
+from app.routes.sessions import router as sessions_router
 
 settings = get_settings()
 IS_DEV = settings.environment != "production"
@@ -37,6 +38,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(sessions_router)
 
 
 @app.get("/health", tags=["health"])

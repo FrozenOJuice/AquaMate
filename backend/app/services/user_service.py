@@ -19,6 +19,11 @@ class UserService:
     def get_by_username(self, username: str) -> User | None:
         return self.repo.get_by_username(username)
 
+    def get_by_identifier(self, identifier: str) -> User | None:
+        if "@" in identifier:
+            return self.get_by_email(identifier)
+        return self.get_by_username(identifier)
+
     def _ensure_unique(self, email: str | None = None, username: str | None = None) -> None:
         if email and self.repo.get_by_email(email):
             raise ValueError("Account already exists")
