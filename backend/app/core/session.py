@@ -26,8 +26,10 @@ def create_session(user_id: UUID, user_agent: Optional[str] = None, ip: Optional
     metadata = {
         "user_id": str(user_id),
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "issued_at": datetime.now(timezone.utc).isoformat(),
         "user_agent": user_agent,
         "ip": ip,
+        "last_seen": datetime.now(timezone.utc).isoformat(),
     }
     redis_client.setex(
         _session_key(session_id),
@@ -45,6 +47,13 @@ def get_user_id_for_session(session_id: str) -> UUID | None:
         return None
     try:
         payload = json.loads(raw)
+        # update last_seen
+        payload["last_seen"] = datetime.now(timezone.utc).isoformat()
+        redis_client.setex(
+            _session_key(session_id),
+            settings.session_max_age_seconds,
+            json.dumps(payload),
+        )
         return UUID(payload.get("user_id"))
     except (ValueError, TypeError, json.JSONDecodeError):
         return None
@@ -85,3 +94,22 @@ def revoke_all_sessions(user_id: UUID) -> None:
         keys = [_session_key(sid) for sid in session_ids]
         redis_client.delete(*keys)
     redis_client.delete(_user_sessions_key(user_id))
+
+
+def revoke_session_for_user(user_id: UUID, session_id: str) -> bool:
+    """
+    Revoke a specific session if it belongs to the user.
+    """
+    raw = redis_client.get(_session_key(session_id))
+    if not raw:
+        redis_client.srem(_user_sessions_key(user_id), session_id)
+        return False
+    try:
+        payload = json.loads(raw)
+        if payload.get("user_id") != str(user_id):
+            return False
+    except json.JSONDecodeError:
+        return False
+    redis_client.delete(_session_key(session_id))
+    redis_client.srem(_user_sessions_key(user_id), session_id)
+    return True

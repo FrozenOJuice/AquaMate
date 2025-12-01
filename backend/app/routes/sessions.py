@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.core.session import (
     list_sessions,
     revoke_all_sessions,
+    revoke_session_for_user,
 )
 from app.models.user import User
 from app.core.security import get_current_user
@@ -25,6 +26,17 @@ def logout_all(
 ):
     revoke_all_sessions(current_user.id)
     response.delete_cookie(key="session")
+    return None
+
+
+@router.post("/revoke", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    ok = revoke_session_for_user(current_user.id, session_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return None
 
 
