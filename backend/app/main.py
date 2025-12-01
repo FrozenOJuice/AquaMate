@@ -42,8 +42,6 @@ def health_check():
 
 
 
-
-# Future: import routers from app packages (e.g., users) and include them under /api/
-# Example: app.include_router(user_router, prefix="/api/users")
-# Future production hardening: add request logging middleware, metrics, rate limiting,
-# structured error handling, database session lifespan events, and auth (Cookies).
+# TODO: import routers from app packages (e.g., users) and include them under /api/.
+# TODO: add request logging middleware, metrics, rate limiting, structured error handling,
+#       database session lifespan events, and auth before production.

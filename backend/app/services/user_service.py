@@ -12,7 +12,6 @@ class UserService:
         self.repo = UserRepository(db)
 
     def create_user(self, data: UserCreate) -> User:
-        # TODO: hash password before persisting.
         return self.repo.create(data)
 
     def get_user(self, user_id: UUID) -> User | None:
@@ -25,7 +24,6 @@ class UserService:
         user = self.repo.get(user_id)
         if not user:
             return None
-        # TODO: hash password if present.
         return self.repo.update(user, data)
 
     def deactivate_user(self, user_id: UUID) -> User | None:
@@ -48,4 +46,4 @@ class UserService:
         return True
 
 
-# Future: add password hashing/verification, uniqueness validation, and role checks.
+# TODO: add uniqueness validation, role-based access checks, and domain errors.

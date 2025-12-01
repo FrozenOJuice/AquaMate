@@ -46,4 +46,4 @@ class User(Base):
     )
 
 
-# Future: add timestamps, profile relations, and auditing fields.
+# TODO: add updated_at/soft-delete fields and profile relations for auditing.

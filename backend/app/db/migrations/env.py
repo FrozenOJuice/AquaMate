@@ -30,6 +30,8 @@ if config.config_file_name is not None:
 # add your model's MetaData object here for 'autogenerate' support
 target_metadata = Base.metadata
 
+# TODO: define naming conventions on metadata for consistent constraint names.
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

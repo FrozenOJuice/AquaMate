@@ -35,3 +35,6 @@ class UserRead(UserBase):
 
     class Config:
         from_attributes = True
+
+
+# TODO: add password strength validation and role-based response variants if needed.

@@ -2,7 +2,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.models.user import User, UserRole, UserStatus
+from app.core.security import hash_password
+from app.models.user import User, UserStatus
 from app.schemas.user import UserCreate, UserUpdate
 
 
@@ -14,7 +15,7 @@ class UserRepository:
         user = User(
             username=data.username,
             email=data.email,
-            hashed_password=data.password,  # TODO: hash before saving
+            hashed_password=hash_password(data.password),
             role=data.role,
             status=data.status,
         )
@@ -47,7 +48,7 @@ class UserRepository:
         if data.email is not None:
             user.email = data.email
         if data.password is not None:
-            user.hashed_password = data.password  # TODO: hash before saving
+            user.hashed_password = hash_password(data.password)
         if data.role is not None:
             user.role = data.role
         if data.status is not None:
@@ -76,4 +77,4 @@ class UserRepository:
         self.db.commit()
 
 
-# Future: inject password hasher, add uniqueness checks, and add queries by role/status.
+# TODO: add uniqueness checks, queries by role/status, and password rehash handling.

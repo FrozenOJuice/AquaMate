@@ -26,3 +26,5 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# TODO: add engine disposal hooks on shutdown and pool sizing tuned per deployment.

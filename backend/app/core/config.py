@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 # Change stuff in .env to configure.
+# TODO: enforce required settings (e.g., database_url, secrets) when environment is production.
 class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
