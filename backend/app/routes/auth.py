@@ -59,3 +59,8 @@ def login(
 def logout(response: Response, current_user: User = Depends(get_current_user)):
     response.delete_cookie(key="session")
     return None
+
+
+@router.get("/me", response_model=UserRead)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user

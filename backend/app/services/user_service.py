@@ -24,38 +24,6 @@ class UserService:
     def get_by_username(self, username: str) -> User | None:
         return self.repo.get_by_username(username)
 
-    def list_users(self, *, limit: int = 100, offset: int = 0) -> list[User]:
-        return self.repo.list(limit=limit, offset=offset)
-
-    def update_user(self, user_id: UUID, data: UserUpdate) -> User | None:
-        user = self.repo.get(user_id)
-        if not user:
-            return None
-        if data.email and data.email != user.email:
-            self._ensure_unique(email=data.email)
-        if data.username and data.username != user.username:
-            self._ensure_unique(username=data.username)
-        return self.repo.update(user, data)
-
-    def deactivate_user(self, user_id: UUID) -> User | None:
-        user = self.repo.get(user_id)
-        if not user:
-            return None
-        return self.repo.deactivate(user)
-
-    def activate_user(self, user_id: UUID) -> User | None:
-        user = self.repo.get(user_id)
-        if not user:
-            return None
-        return self.repo.activate(user)
-
-    def delete_user(self, user_id: UUID) -> bool:
-        user = self.repo.get(user_id)
-        if not user:
-            return False
-        self.repo.delete(user)
-        return True
-
     def _ensure_unique(self, email: str | None = None, username: str | None = None) -> None:
         if email and self.repo.get_by_email(email):
             raise ValueError("Email already in use")
