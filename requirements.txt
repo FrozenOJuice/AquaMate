@@ -31,4 +31,4 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.38.0
 pydantic-settings==2.6.1
-itsdangerous==2.2.0
+redis==5.2.0

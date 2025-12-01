@@ -3,16 +3,15 @@ from uuid import UUID
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import Cookie, Depends, HTTPException, status
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.session import create_session, get_user_id_for_session, revoke_session
 from app.db.session import get_db
 
 settings = get_settings()
 
 _pwd_hasher = PasswordHasher()
-_session_serializer = URLSafeTimedSerializer(settings.session_secret)
 SESSION_COOKIE_NAME = "session"
 
 
@@ -30,22 +29,6 @@ def verify_password(password: str, hashed_password: str) -> bool:
         return False
     except VerificationError:
         return False
-
-
-def create_session_token(user_id: UUID) -> str:
-    """Create a signed session token for a user id."""
-    return _session_serializer.dumps(str(user_id))
-
-
-def verify_session_token(token: str) -> UUID | None:
-    """Validate and decode a session token into a user id."""
-    try:
-        user_id_str = _session_serializer.loads(
-            token, max_age=settings.session_max_age_seconds
-        )
-        return UUID(user_id_str)
-    except (BadSignature, SignatureExpired, ValueError):
-        return None
 
 
 def set_session_cookie(response, token: str) -> None:
@@ -70,11 +53,11 @@ def get_current_user(
     if not session_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
-    user_id = verify_session_token(session_token)
+    user_id = get_user_id_for_session(session_token)
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

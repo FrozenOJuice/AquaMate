@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.security import (
-    create_session_token,
     get_current_user,
     set_session_cookie,
     verify_password,
 )
+from app.core.session import create_session, revoke_session
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserRead
@@ -30,8 +30,8 @@ def register(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
-    token = create_session_token(user.id)
-    set_session_cookie(response, token)
+    session_id = create_session(user.id)
+    set_session_cookie(response, session_id)
     return user
 
 
@@ -50,13 +50,19 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = create_session_token(user.id)
-    set_session_cookie(response, token)
+    session_id = create_session(user.id)
+    set_session_cookie(response, session_id)
     return user
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response, current_user: User = Depends(get_current_user)):
+def logout(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    session_token: str | None = Cookie(None, alias="session"),
+):
+    if session_token:
+        revoke_session(session_token)
     response.delete_cookie(key="session")
     return None
 

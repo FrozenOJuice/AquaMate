@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     cors_origins: str = "*"  # Comma-separated; tighten in production.
     session_secret: str = "change-me"  # TODO: set a strong secret in production.
     session_max_age_seconds: int = 60 * 60 * 24 * 7  # 7 days
+    redis_url: str = "redis://redis:6379/0"
 
     model_config = SettingsConfigDict(
         env_file=".env",
