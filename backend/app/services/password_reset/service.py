@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.security import verify_password
 from app.models.user import User, UserStatus
 from app.schemas import validators
+from app.services.reset_token_service import ResetTokenService
 from app.services.session_service import SessionService
 from app.services.user_service import UserService
 from app.services.password_reset.audit import ResetAuditTracker
@@ -46,10 +47,12 @@ class PasswordResetService:
         self,
         user_service: UserService,
         session_service: SessionService,
+        token_service: ResetTokenService,
         send_email_fn: Optional[Callable[[str, str, str], None]] = None,
     ):
         self.user_service = user_service
         self.session_service = session_service
+        self.token_service = token_service
         self.settings = get_settings()
         self.rate_limiter = SlidingWindowRateLimiter(self._RATE_LIMIT_WINDOW_SECONDS)
         self.reset_auditor = ResetAuditTracker(
@@ -67,7 +70,7 @@ class PasswordResetService:
         if not user or user.status != UserStatus.ACTIVE:
             return False
 
-        token = self.session_service.create_reset_token(user.id)
+        token = self.token_service.create_reset_token(user.id)
         self.notifier.dispatch(user, token)
         return True
 
@@ -82,7 +85,7 @@ class PasswordResetService:
 
         self._enforce_rate_limit(client_ip or "unknown", self._RESET_ATTEMPT_LIMIT)
 
-        user_id = self.session_service.consume_reset_token(token)
+        user_id = self.token_service.consume_reset_token(token)
         if not user_id:
             logger.warning("Password reset failed: invalid token")
             raise InvalidResetTokenError()

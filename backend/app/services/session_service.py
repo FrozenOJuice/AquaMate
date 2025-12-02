@@ -10,12 +10,11 @@ from app.core.redis_client import redis_client
 
 class SessionService:
     """
-    Redis-backed session and token management.
+    Redis-backed session management.
     """
 
     SESSION_PREFIX = "session:"
     SESSION_SET_PREFIX = "user_sessions:"
-    RESET_TOKEN_PREFIX = "reset:"
 
     def __init__(self, settings: Settings, client=redis_client):
         self.settings = settings
@@ -109,31 +108,8 @@ class SessionService:
         self.client.srem(self._user_sessions_key(user_id), session_id)
         return True
 
-    def create_reset_token(self, user_id: UUID, ttl_seconds: int = 3600) -> str:
-        token = secrets.token_urlsafe(32)
-        payload = {
-            "user_id": str(user_id),
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        self.client.setex(self._reset_key(token), ttl_seconds, json.dumps(payload))
-        return token
-
-    def consume_reset_token(self, token: str) -> UUID | None:
-        raw = self.client.get(self._reset_key(token))
-        if not raw:
-            return None
-        self.client.delete(self._reset_key(token))
-        try:
-            payload = json.loads(raw)
-            return UUID(payload.get("user_id"))
-        except (ValueError, TypeError, json.JSONDecodeError):
-            return None
-
     def _session_key(self, session_id: str) -> str:
         return f"{self.SESSION_PREFIX}{session_id}"
 
     def _user_sessions_key(self, user_id: UUID) -> str:
         return f"{self.SESSION_SET_PREFIX}{user_id}"
-
-    def _reset_key(self, token: str) -> str:
-        return f"{self.RESET_TOKEN_PREFIX}{token}"
