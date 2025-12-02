@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.services.password_reset_service import PasswordResetService
+from app.services.password_reset import PasswordResetService
 from app.services.session_service import SessionService
 from app.services.user_service import UserService
 

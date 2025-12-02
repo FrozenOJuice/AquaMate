@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from app.core.security import set_session_cookie
 from app.dependencies import get_password_reset_service
 from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest
-from app.services.password_reset_service import (
+from app.services.password_reset import (
     InvalidResetTokenError,
     PasswordResetService,
     PasswordReuseError,
