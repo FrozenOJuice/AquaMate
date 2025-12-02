@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     database_url: Optional[str] = None
     cors_origins: str = "*"  # Comma-separated; tighten in production.
     session_secret: str = "change-me"  # TODO: set a strong secret in production.
+    session_signing_secret: str = "change-me-too"  # Used for signing session cookies.
     session_max_age_seconds: int = 60 * 60 * 24 * 7  # 7 days
     redis_url: str = "redis://redis:6379/0"
     smtp_host: Optional[str] = None

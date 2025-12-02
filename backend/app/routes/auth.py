@@ -39,6 +39,7 @@ def login(
     response: Response,
     service: UserService = Depends(get_user_service),
     session_service: SessionService = Depends(get_session_service),
+    existing_session: str | None = Cookie(None, alias="session"),
 ):
     user = service.get_by_identifier(payload.identifier)
     if not user or not verify_password(payload.password, user.hashed_password):
@@ -48,6 +49,14 @@ def login(
             detail=detail,
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Rotate any existing session for this client.
+    from app.core.security import _unsign  # local import to avoid circular
+
+    if existing_session:
+        raw = _unsign(existing_session)
+        if raw:
+            session_service.revoke_session_for_user(user.id, raw)
 
     session_id = session_service.create_session(user.id)
     set_session_cookie(response, session_id)
@@ -62,7 +71,11 @@ def logout(
     session_service: SessionService = Depends(get_session_service),
 ):
     if session_token:
-        session_service.revoke_session(session_token)
+        from app.core.security import _unsign  # local import to avoid circular
+
+        raw = _unsign(session_token)
+        if raw:
+            session_service.revoke_session_for_user(current_user.id, raw)
     response.delete_cookie(key="session")
     return None
 

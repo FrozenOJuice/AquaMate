@@ -1,3 +1,6 @@
+import hmac
+import secrets
+from hashlib import sha256
 from uuid import UUID
 
 from argon2 import PasswordHasher
@@ -13,10 +16,26 @@ settings = get_settings()
 
 _pwd_hasher = PasswordHasher()
 SESSION_COOKIE_NAME = "session"
+SESSION_SIGNATURE_SEPARATOR = "."
 
 
 def get_session_service() -> SessionService:
     return SessionService(settings)
+
+
+def _sign(value: str) -> str:
+    sig = hmac.new(settings.session_signing_secret.encode(), value.encode(), sha256).hexdigest()
+    return f"{value}{SESSION_SIGNATURE_SEPARATOR}{sig}"
+
+
+def _unsign(signed_value: str) -> str | None:
+    if SESSION_SIGNATURE_SEPARATOR not in signed_value:
+        return None
+    value, sig = signed_value.rsplit(SESSION_SIGNATURE_SEPARATOR, 1)
+    expected = hmac.new(settings.session_signing_secret.encode(), value.encode(), sha256).hexdigest()
+    if hmac.compare_digest(sig, expected):
+        return value
+    return None
 
 
 def hash_password(password: str) -> str:
@@ -36,10 +55,11 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 
 def set_session_cookie(response, token: str) -> None:
-    """Attach the session cookie to the response."""
+    """Attach the signed session cookie to the response."""
+    signed = _sign(token)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
-        value=token,
+        value=signed,
         httponly=True,
         secure=not settings.debug,
         samesite="lax",
@@ -63,7 +83,15 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id = session_service.get_user_id_for_session(session_token)
+    raw_token = _unsign(session_token)
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = session_service.get_user_id_for_session(raw_token)
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
